@@ -2,6 +2,1086 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Microbarometer 3D Prototype — SIH26144 / PS144</title>
+<script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+<style>
+  canvas { display:block; }
+  .glow { box-shadow: 0 0 12px rgba(59,130,246,0.35); }
+  ::-webkit-scrollbar { width:6px; }
+  ::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+</style>
+</head>
+<body class="bg-[var(--background)] text-[var(--foreground)] antialiased m-0 p-0 overflow-hidden select-none" style="height:100vh;">
+
+<!-- ─── LAYOUT ─── -->
+<div class="flex flex-col h-screen">
+
+  <!-- Top bar -->
+  <header class="flex items-center justify-between px-4 py-2 border-b border-[var(--border)] bg-[var(--card)] shrink-0 z-10">
+    <div class="flex items-center gap-3">
+      <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+      <h1 class="text-sm font-bold tracking-tight">Microbarometer 3D Prototype</h1>
+      <span class="text-[11px] px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300 font-semibold">SIH26144</span>
+      <span class="text-[11px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 font-medium">Conceptual Visualization</span>
+    </div>
+    <div class="text-[11px] text-[var(--muted-foreground)]">Left-drag: Orbit &middot; Right-drag: Pan &middot; Scroll: Zoom</div>
+  </header>
+
+  <div class="flex flex-1 overflow-hidden">
+
+    <!-- Left controls panel -->
+    <aside class="w-64 shrink-0 border-r border-[var(--border)] bg-[var(--card)] overflow-y-auto p-3 space-y-4 z-10">
+
+      <!-- Camera presets -->
+      <div>
+        <div class="text-[11px] font-semibold text-[var(--muted-foreground)] uppercase tracking-wider mb-2">Camera Presets</div>
+        <div class="grid grid-cols-2 gap-1.5">
+          <button onclick="setCam('front')"    class="cam-btn px-2 py-1.5 text-xs rounded-lg border border-[var(--border)] hover:border-blue-500 hover:bg-blue-50/30 dark:hover:bg-blue-950/30 font-medium transition-all">Front</button>
+          <button onclick="setCam('top')"      class="cam-btn px-2 py-1.5 text-xs rounded-lg border border-[var(--border)] hover:border-blue-500 hover:bg-blue-50/30 dark:hover:bg-blue-950/30 font-medium transition-all">Top</button>
+          <button onclick="setCam('iso')"      class="cam-btn px-2 py-1.5 text-xs rounded-lg border border-blue-500 bg-blue-50/50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 font-medium transition-all glow">Isometric</button>
+          <button onclick="setCam('right')"    class="cam-btn px-2 py-1.5 text-xs rounded-lg border border-[var(--border)] hover:border-blue-500 hover:bg-blue-50/30 dark:hover:bg-blue-950/30 font-medium transition-all">Right</button>
+          <button onclick="setCam('exploded')" class="cam-btn px-2 py-1.5 text-xs rounded-lg border border-[var(--border)] hover:border-blue-500 hover:bg-blue-50/30 dark:hover:bg-blue-950/30 font-medium transition-all col-span-2">Exploded View</button>
+          <button onclick="setCam('cutaway')"  class="cam-btn px-2 py-1.5 text-xs rounded-lg border border-[var(--border)] hover:border-blue-500 hover:bg-blue-50/30 dark:hover:bg-blue-950/30 font-medium transition-all col-span-2">Cutaway / X-Ray</button>
+        </div>
+      </div>
+
+      <!-- Display toggles -->
+      <div>
+        <div class="text-[11px] font-semibold text-[var(--muted-foreground)] uppercase tracking-wider mb-2">Display Modes</div>
+        <div class="space-y-1.5">
+          <label class="flex items-center gap-2 text-xs cursor-pointer"><input type="checkbox" id="chk-explode" onchange="toggleExplode()" class="accent-blue-600"> Explode Assembly</label>
+          <label class="flex items-center gap-2 text-xs cursor-pointer"><input type="checkbox" id="chk-xray" onchange="toggleXray()" class="accent-blue-600"> Transparent X-Ray</label>
+          <label class="flex items-center gap-2 text-xs cursor-pointer"><input type="checkbox" id="chk-labels" onchange="toggleLabels()" checked class="accent-blue-600"> Component Labels</label>
+          <label class="flex items-center gap-2 text-xs cursor-pointer"><input type="checkbox" id="chk-grid" onchange="toggleGrid()" checked class="accent-blue-600"> Ground Grid</label>
+          <label class="flex items-center gap-2 text-xs cursor-pointer"><input type="checkbox" id="chk-dims" onchange="toggleDims()" class="accent-blue-600"> Dimensions</label>
+          <label class="flex items-center gap-2 text-xs cursor-pointer"><input type="checkbox" id="chk-tubing" onchange="render()" checked class="accent-blue-600"> Pneumatic Tubing</label>
+        </div>
+      </div>
+
+      <!-- Explode slider -->
+      <div>
+        <div class="flex justify-between items-center mb-1">
+          <span class="text-[11px] font-semibold text-[var(--muted-foreground)] uppercase tracking-wider">Explode Distance</span>
+          <span id="explode-val" class="text-[11px] text-blue-600 font-mono">0%</span>
+        </div>
+        <input type="range" id="explode-slider" min="0" max="100" value="0" oninput="setExplode(this.value)" class="w-full accent-blue-600">
+      </div>
+
+      <!-- Component list -->
+      <div>
+        <div class="text-[11px] font-semibold text-[var(--muted-foreground)] uppercase tracking-wider mb-2">Components (click to highlight)</div>
+        <div id="comp-list" class="space-y-1"></div>
+      </div>
+    </aside>
+
+    <!-- Main 3D viewport -->
+    <div class="flex-1 relative">
+      <canvas id="viewport"></canvas>
+
+      <!-- Info panel (bottom-right) -->
+      <div id="info-panel" class="absolute bottom-4 right-4 w-72 bg-[var(--card)]/95 backdrop-blur border border-[var(--border)] rounded-xl p-4 text-xs shadow-lg transition-all opacity-0 pointer-events-none z-20">
+        <div class="flex items-center justify-between mb-2">
+          <div id="info-title" class="font-bold text-sm text-[var(--foreground)]"></div>
+          <button onclick="hideInfo()" class="text-[var(--muted-foreground)] hover:text-[var(--foreground)]">✕</button>
+        </div>
+        <div id="info-section" class="text-[11px] px-2 py-0.5 rounded-full w-fit mb-2"></div>
+        <div id="info-body" class="text-[var(--muted-foreground)] space-y-1"></div>
+      </div>
+
+      <!-- Axes indicator (bottom-left) -->
+      <canvas id="axes-widget" width="90" height="90" class="absolute bottom-4 left-4 z-20 opacity-70"></canvas>
+    </div>
+  </div>
+</div>
+
+<script>
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║  CUSTOM 3D ENGINE — Perspective Projection, Painter's Sort, Flat Shade ║
+// ╚══════════════════════════════════════════════════════════════════════════╝
+
+const C = document.getElementById('viewport');
+const ctx = C.getContext('2d');
+const AX = document.getElementById('axes-widget').getContext('2d');
+
+// ── State ──
+let W, H;
+let camTheta = 0.65, camPhi = 0.45, camDist = 420, camTarget = [0, 15, 0];
+let panX = 0, panY = 0;
+let explodeT = 0;       // 0..1
+let xrayMode = false;
+let showLabels = true;
+let showGrid = true;
+let showDims = false;
+let highlighted = -1;
+let isDark = false;
+
+function resize() {
+  const r = C.parentElement.getBoundingClientRect();
+  W = r.width; H = r.height;
+  C.width = W * devicePixelRatio;
+  C.height = H * devicePixelRatio;
+  C.style.width = W + 'px';
+  C.style.height = H + 'px';
+  ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+  render();
+}
+window.addEventListener('resize', resize);
+
+// ── Math helpers ──
+const V3 = {
+  add: (a,b) => [a[0]+b[0], a[1]+b[1], a[2]+b[2]],
+  sub: (a,b) => [a[0]-b[0], a[1]-b[1], a[2]-b[2]],
+  mul: (a,s) => [a[0]*s, a[1]*s, a[2]*s],
+  dot: (a,b) => a[0]*b[0]+a[1]*b[1]+a[2]*b[2],
+  cross: (a,b) => [a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0]],
+  len: a => Math.sqrt(a[0]*a[0]+a[1]*a[1]+a[2]*a[2]),
+  norm: a => { const l=V3.len(a)||1; return [a[0]/l,a[1]/l,a[2]/l]; },
+  lerp: (a,b,t) => [a[0]+(b[0]-a[0])*t, a[1]+(b[1]-a[1])*t, a[2]+(b[2]-a[2])*t],
+};
+
+function rotY(v, a) {
+  const c=Math.cos(a), s=Math.sin(a);
+  return [v[0]*c+v[2]*s, v[1], -v[0]*s+v[2]*c];
+}
+function rotX(v, a) {
+  const c=Math.cos(a), s=Math.sin(a);
+  return [v[0], v[1]*c-v[2]*s, v[1]*s+v[2]*c];
+}
+
+function project(p) {
+  let v = V3.sub(p, camTarget);
+  v = rotY(v, -camTheta);
+  v = rotX(v, -camPhi);
+  const fov = 600;
+  const z = v[2] + camDist;
+  if (z < 1) return null;
+  const s = fov / z;
+  return { x: W/2 + v[0]*s + panX, y: H/2 - v[1]*s + panY, z: z, s };
+}
+
+// ── Mesh primitives ──
+function makeBox(cx,cy,cz, sx,sy,sz, color, componentId) {
+  const hx=sx/2, hy=sy/2, hz=sz/2;
+  const verts = [
+    [cx-hx,cy-hy,cz-hz],[cx+hx,cy-hy,cz-hz],[cx+hx,cy+hy,cz-hz],[cx-hx,cy+hy,cz-hz],
+    [cx-hx,cy-hy,cz+hz],[cx+hx,cy-hy,cz+hz],[cx+hx,cy+hy,cz+hz],[cx-hx,cy+hy,cz+hz],
+  ];
+  const faces = [
+    {vi:[0,1,2,3], n:[0,0,-1]}, {vi:[5,4,7,6], n:[0,0,1]},
+    {vi:[4,5,1,0], n:[0,-1,0]}, {vi:[3,2,6,7], n:[0,1,0]},
+    {vi:[4,0,3,7], n:[-1,0,0]}, {vi:[1,5,6,2], n:[1,0,0]},
+  ];
+  return faces.map(f => ({
+    pts: f.vi.map(i => verts[i]),
+    n: f.n,
+    color,
+    cid: componentId
+  }));
+}
+
+function makeCylinder(cx,cy,cz, r, h, axis, segs, color, cid) {
+  const faces = [];
+  const half = h/2;
+  for (let i = 0; i < segs; i++) {
+    const a0 = (i/segs)*Math.PI*2, a1 = ((i+1)/segs)*Math.PI*2;
+    const c0 = Math.cos(a0), s0 = Math.sin(a0);
+    const c1 = Math.cos(a1), s1 = Math.sin(a1);
+    let p0b, p0t, p1b, p1t, n;
+    if (axis === 'y') {
+      p0b = [cx+r*c0, cy-half, cz+r*s0];
+      p0t = [cx+r*c0, cy+half, cz+r*s0];
+      p1b = [cx+r*c1, cy-half, cz+r*s1];
+      p1t = [cx+r*c1, cy+half, cz+r*s1];
+      n = [(c0+c1)/2, 0, (s0+s1)/2];
+    } else if (axis === 'x') {
+      p0b = [cx-half, cy+r*c0, cz+r*s0];
+      p0t = [cx+half, cy+r*c0, cz+r*s0];
+      p1b = [cx-half, cy+r*c1, cz+r*s1];
+      p1t = [cx+half, cy+r*c1, cz+r*s1];
+      n = [0, (c0+c1)/2, (s0+s1)/2];
+    } else {
+      p0b = [cx+r*c0, cy+r*s0, cz-half];
+      p0t = [cx+r*c0, cy+r*s0, cz+half];
+      p1b = [cx+r*c1, cy+r*s1, cz-half];
+      p1t = [cx+r*c1, cy+r*s1, cz+half];
+      n = [(c0+c1)/2, (s0+s1)/2, 0];
+    }
+    faces.push({ pts:[p0b,p1b,p1t,p0t], n:V3.norm(n), color, cid });
+    // caps
+    const center_b = axis==='y'?[cx,cy-half,cz]:axis==='x'?[cx-half,cy,cz]:[cx,cy,cz-half];
+    const center_t = axis==='y'?[cx,cy+half,cz]:axis==='x'?[cx+half,cy,cz]:[cx,cy,cz+half];
+    const nb = axis==='y'?[0,-1,0]:axis==='x'?[-1,0,0]:[0,0,-1];
+    const nt = axis==='y'?[0,1,0]:axis==='x'?[1,0,0]:[0,0,1];
+    faces.push({ pts:[center_b, p0b, p1b], n:nb, color, cid });
+    faces.push({ pts:[center_t, p1t, p0t], n:nt, color, cid });
+  }
+  return faces;
+}
+
+// ── COMPONENT DEFINITIONS ──
+const COMPONENTS = [];
+
+function defineComponents() {
+  COMPONENTS.length = 0;
+  const E = explodeT;
+
+  // Colors
+  const COL_ENC    = [228,232,236];  // light grey enclosure
+  const COL_LID    = [200,207,215];  // aluminium lid
+  const COL_CHAMB  = [180,190,200];  // brushed aluminium chamber
+  const COL_PCB    = [15, 45, 95];   // dark navy PCB
+  const COL_BRASS  = [205,175,70];   // brass / copper
+  const COL_SENSOR = [55, 65, 80];   // dark sensor package
+  const COL_ESP    = [210,212,218];  // ESP32 RF shield
+  const COL_IC     = [30, 30, 35];   // IC packages
+  const COL_GASKET = [45, 48, 52];   // silicone gasket
+  const COL_TUBE   = [80,160,240];   // translucent blue tubing
+  const COL_INLET  = [195,170,55];   // porous inlet
+  const COL_STOFF  = [195,170,70];   // standoffs
+  const COL_GREEN  = [40,160,80];    // status LED
+  const COL_WIRE   = [120,60,60];    // harness
+  const COL_BULK   = [215,218,222];  // bulkhead
+
+  // Dimensions (in mm, centered at origin)
+  const EL=165, EW=100, EH=56, WALL=3.5;
+  const BX = -EL/2 + 82;  // bulkhead X position
+
+  // 0: Enclosure Base
+  const baseOff = [0, -E*15, 0];
+  COMPONENTS.push({
+    id: 0, name: 'Enclosure Base', section: 'Chassis',
+    info: 'Light-grey protective housing (165×100×56 mm preliminary). Features internal dividing bulkhead, port cutouts, and screw bosses. Material: Machined aluminium or high-impact ABS.',
+    faces: [
+      ...makeBox(baseOff[0], EH/2*0.4 + baseOff[1], baseOff[2], EL, EH*0.8, EW, COL_ENC, 0),
+      // front wall cutout visualization (thin strip)
+    ],
+    labelPos: [0, -5 + baseOff[1], EW/2+8],
+    offset: baseOff,
+  });
+
+  // 1: Internal Bulkhead
+  const bulkOff = [0, -E*8, 0];
+  COMPONENTS.push({
+    id: 1, name: 'Internal Bulkhead', section: 'Chassis',
+    info: 'Dividing wall (2.5 mm thick) separating Section A (Pneumatic) from Section B (Electronics). Has a 12 mm rubber-grommet pass-through for the shielded signal harness.',
+    faces: makeBox(BX + bulkOff[0], EH*0.4 + bulkOff[1], bulkOff[2], 2.5, EH*0.65, EW-2*WALL, COL_BULK, 1),
+    labelPos: [BX, EH*0.6 + bulkOff[1], 0],
+    offset: bulkOff,
+  });
+
+  // 2: Reference Chamber (200 mL cylinder — horizontal along X in Section A)
+  const chX = -EL/2 + 14;
+  const chOff = [-E*12, E*20, 0];
+  COMPONENTS.push({
+    id: 2, name: 'Reference Chamber (200 mL)', section: 'A — Pneumatic',
+    info: 'Sealed cylindrical aluminium vessel (Ø52 mm OD, Ø48 mm ID, 112 mm length). Internal volume ≈ 200 mL. Contains ambient air at approximately atmospheric pressure during assembly. Provides acoustic compliance Cₐ = V/(γP₀) ≈ 1.41×10⁻⁹ m³/Pa.',
+    faces: makeCylinder(chX + 56 + chOff[0], 18 + chOff[1], chOff[2], 26, 108, 'x', 20, COL_CHAMB, 2),
+    labelPos: [chX + 56 + chOff[0], 52 + chOff[1], 0],
+    offset: chOff,
+  });
+
+  // 3: Chamber End Caps (flanges)
+  COMPONENTS.push({
+    id: 3, name: 'Chamber End Flanges', section: 'A — Pneumatic',
+    info: 'Machined aluminium end caps with O-ring seals and dual barbed pneumatic port fittings. Provides leak-tight closure and pneumatic access.',
+    faces: [
+      ...makeCylinder(chX + 2 + chOff[0], 18 + chOff[1], chOff[2], 29, 4, 'x', 16, COL_CHAMB, 3),
+      ...makeCylinder(chX + 110 + chOff[0], 18 + chOff[1], chOff[2], 29, 4, 'x', 16, COL_CHAMB, 3),
+    ],
+    labelPos: [chX + 2 + chOff[0], 52 + chOff[1], 25],
+    offset: chOff,
+  });
+
+  // 4: Capillary Tube (represented as a series of small tube segments in a coil)
+  const capOff = [-E*5, E*28, 0];
+  const capFaces = [];
+  const coilR = 14, coilCx = chX + 80 + capOff[0], coilCy = 18 + capOff[1];
+  for (let i = 0; i < 30; i++) {
+    const a0 = (i/30)*Math.PI*6, a1 = ((i+1)/30)*Math.PI*6;
+    const dx = (i/30)*18;
+    const dx1 = ((i+1)/30)*18;
+    const x0 = coilCx - 9 + dx, y0 = coilCy + coilR*Math.cos(a0), z0 = capOff[2] + coilR*Math.sin(a0);
+    const x1 = coilCx - 9 + dx1, y1 = coilCy + coilR*Math.cos(a1), z1 = capOff[2] + coilR*Math.sin(a1);
+    capFaces.push(...makeCylinder((x0+x1)/2, (y0+y1)/2, (z0+z1)/2, 1.2, V3.len(V3.sub([x1,y1,z1],[x0,y0,z0])), 'x', 6, COL_BRASS, 4));
+  }
+  COMPONENTS.push({
+    id: 4, name: 'Capillary Tube (Rₐ)', section: 'A — Pneumatic',
+    info: 'Coiled narrow-bore tube: 0.3 mm ID, 1.2 mm OD, 89 mm length. Provides acoustic resistance Rₐ = 8ηL/(πr⁴) ≈ 8.1×10⁹ Pa·s/m³. Seamless drawn copper or surgical stainless steel. Dimensions are preliminary and adjustable.',
+    faces: capFaces,
+    labelPos: [coilCx, coilCy + 22, 20],
+    offset: capOff,
+  });
+
+  // 5: Differential MEMS Sensor + Mounting Bracket
+  const sensorX = BX - 18;
+  const sOff = [E*3, E*15, 0];
+  COMPONENTS.push({
+    id: 5, name: 'Differential MEMS Sensor', section: 'A — Pneumatic',
+    info: 'Main sensing element with two pressure ports: Ambient Port (+) and Reference Port (−). Outputs analog differential voltage proportional to ΔP. Exact manufacturer part number not yet finalized. Package ≈ 16×20 mm dual-barb.',
+    faces: [
+      // Bracket
+      ...makeBox(sensorX + sOff[0], 12 + sOff[1], sOff[2], 22, 16, 28, [120,125,130], 5),
+      // Sensor package
+      ...makeBox(sensorX + sOff[0], 23 + sOff[1], sOff[2], 16, 5, 20, COL_SENSOR, 5),
+      // Port A barb
+      ...makeCylinder(sensorX + sOff[0], 28 + sOff[1], -5 + sOff[2], 2, 10, 'y', 6, [200,200,210], 5),
+      // Port B barb
+      ...makeCylinder(sensorX + sOff[0], 28 + sOff[1], 5 + sOff[2], 2, 10, 'y', 6, [200,200,210], 5),
+    ],
+    labelPos: [sensorX + sOff[0], 40 + sOff[1], 0],
+    offset: sOff,
+  });
+
+  // 6: Wind-Noise Reduction Inlet
+  const inOff = [-E*35, 0, 0];
+  const inletX = -EL/2 - 5;
+  COMPONENTS.push({
+    id: 6, name: 'Porous Wind Inlet', section: 'A — Pneumatic',
+    info: 'Replaceable threaded brass adapter (M12 / ¼" NPT) with sintered bronze/SS porous filter cap (20–40 µm pore size). Damps wind turbulence vortices and prevents particulate contamination. Modular design allows swapping for spatial-rosette arrays in field campaigns.',
+    faces: [
+      // Hex collar
+      ...makeCylinder(inletX - 3 + inOff[0], 25 + inOff[1], inOff[2], 9, 6, 'x', 6, COL_BRASS, 6),
+      // Thread shank
+      ...makeCylinder(inletX + 6 + inOff[0], 25 + inOff[1], inOff[2], 6, 10, 'x', 10, COL_BRASS, 6),
+      // Porous cap
+      ...makeCylinder(inletX - 20 + inOff[0], 25 + inOff[1], inOff[2], 8, 25, 'x', 12, COL_INLET, 6),
+    ],
+    labelPos: [inletX - 20 + inOff[0], 45 + inOff[1], 0],
+    offset: inOff,
+  });
+
+  // 7: Electronics PCB
+  const pcbX = BX + 2.5 + 36;
+  const pcbOff = [E*18, -E*10, 0];
+  COMPONENTS.push({
+    id: 7, name: 'Electronics PCB (FR4)', section: 'B — Electronics',
+    info: '4-layer FR4 substrate, 1.6 mm thick, 72×88 mm. Dark navy solder-mask. Mounted on 4× brass M3 standoffs (12 mm clearance). Houses all signal acquisition and power conditioning circuitry.',
+    faces: makeBox(pcbX + pcbOff[0], 17 + pcbOff[1], pcbOff[2], 72, 1.6, 86, COL_PCB, 7),
+    labelPos: [pcbX + pcbOff[0], 5 + pcbOff[1], -EW/2 - 8],
+    offset: pcbOff,
+  });
+
+  // 8: ESP32 Module
+  const espOff = [E*18, -E*6, 0];
+  COMPONENTS.push({
+    id: 8, name: 'ESP32-WROOM-32E', section: 'B — Electronics',
+    info: 'Espressif ESP32 microcontroller module (18×25.5×3.2 mm) with integrated 2.4 GHz Wi-Fi antenna. Handles precision hardware timestamping, SPI acquisition from ADS1220, ring-buffer management, and USB/Wi-Fi data packetization.',
+    faces: [
+      ...makeBox(pcbX + 12 + espOff[0], 21 + espOff[1], -15 + espOff[2], 18, 3.2, 25.5, COL_ESP, 8),
+      // Antenna (black)
+      ...makeBox(pcbX + 12 + espOff[0], 21 + espOff[1], -30 + espOff[2], 18, 1.2, 5.5, [25,25,25], 8),
+    ],
+    labelPos: [pcbX + 12 + espOff[0], 30 + espOff[1], -15],
+    offset: espOff,
+  });
+
+  // 9: ADS1220 ADC
+  const adcOff = [E*18, -E*4, 0];
+  COMPONENTS.push({
+    id: 9, name: 'ADS1220 24-bit ADC', section: 'B — Electronics',
+    info: 'Texas Instruments ADS1220: 24-bit delta-sigma ADC with internal PGA (gains 1–128), internal voltage reference, and configurable data rate (20–2000 SPS). VQFN-16 package (4×4 mm). Ultra-low noise floor < 1 µVrms.',
+    faces: makeBox(pcbX - 10 + adcOff[0], 20 + adcOff[1], 8 + adcOff[2], 4, 1, 4, COL_IC, 9),
+    labelPos: [pcbX - 10 + adcOff[0], 28 + adcOff[1], 8],
+    offset: adcOff,
+  });
+
+  // 10: INA333 AFE
+  const afeOff = [E*18, -E*3, 0];
+  COMPONENTS.push({
+    id: 10, name: 'INA333 Instrumentation Amp', section: 'B — Electronics',
+    info: 'Texas Instruments INA333 candidate instrumentation amplifier (MSOP-8). Low-noise, low-power, rail-to-rail output. May be bypassed in favor of the ADS1220 internal PGA if bench testing confirms adequate noise performance.',
+    faces: makeBox(pcbX - 10 + afeOff[0], 20 + afeOff[1], 18 + afeOff[2], 3.5, 1, 3.5, COL_IC, 10),
+    labelPos: [pcbX - 10 + afeOff[0], 28 + afeOff[1], 18],
+    offset: afeOff,
+  });
+
+  // 11: USB-C Connector
+  const usbOff = [E*25, -E*8, 0];
+  COMPONENTS.push({
+    id: 11, name: 'USB-C Connector', section: 'B — Electronics',
+    info: 'Edge-mounted USB Type-C receptacle providing both 5 V power input and USB 2.0 serial data link (via CP2102N or CH340 bridge IC on-board). Recessed into enclosure sidewall with strain-relief cutout.',
+    faces: makeBox(pcbX + 36 + usbOff[0], 19 + usbOff[1], 0 + usbOff[2], 7.5, 3.2, 9, [200,200,210], 11),
+    labelPos: [pcbX + 40 + usbOff[0], 30 + usbOff[1], 0],
+    offset: usbOff,
+  });
+
+  // 12: PCB Standoffs (4×)
+  const stOffY = -E*12;
+  const stPositions = [
+    [pcbX - 32, 0, -38], [pcbX + 32, 0, -38],
+    [pcbX - 32, 0, 38],  [pcbX + 32, 0, 38],
+  ];
+  const stFaces = [];
+  stPositions.forEach(p => {
+    stFaces.push(...makeCylinder(p[0], 9 + stOffY, p[2], 2.8, 12, 'y', 6, COL_STOFF, 12));
+  });
+  COMPONENTS.push({
+    id: 12, name: 'Brass M3 Standoffs (×4)', section: 'B — Electronics',
+    info: 'Hexagonal brass standoffs, 12 mm height, M3 threaded, press-fit into enclosure floor. Provide vibration isolation and precise PCB mounting height for USB-C alignment.',
+    faces: stFaces,
+    labelPos: [pcbX + 32, 18 + stOffY, 38],
+    offset: [0, stOffY, 0],
+  });
+
+  // 13: Top Lid
+  const lidOff = [0, E*55, 0];
+  COMPONENTS.push({
+    id: 13, name: 'Aluminium Top Lid', section: 'Chassis',
+    info: 'Machined 6061-T6 aluminium top plate, 4.5 mm thick, anodized finish. Secured by 6× flush M3 hex socket cap screws with counterbored holes. Underside features a perimeter O-ring retention groove.',
+    faces: makeBox(lidOff[0], EH*0.8 + 3 + lidOff[1], lidOff[2], EL, 4.5, EW, COL_LID, 13),
+    labelPos: [0, EH*0.8 + 12 + lidOff[1], 0],
+    offset: lidOff,
+  });
+
+  // 14: Perimeter Gasket
+  const gOff = [0, E*42, 0];
+  const gFaces = [];
+  // simplified as 4 thin bar segments around the perimeter
+  const gT = 2, gW = 3;
+  gFaces.push(...makeBox(gOff[0], EH*0.78 + gOff[1], -EW/2+WALL+gW/2 + gOff[2], EL-2*WALL, gT, gW, COL_GASKET, 14));
+  gFaces.push(...makeBox(gOff[0], EH*0.78 + gOff[1], EW/2-WALL-gW/2 + gOff[2], EL-2*WALL, gT, gW, COL_GASKET, 14));
+  gFaces.push(...makeBox(-EL/2+WALL+gW/2 + gOff[0], EH*0.78 + gOff[1], gOff[2], gW, gT, EW-2*WALL, COL_GASKET, 14));
+  gFaces.push(...makeBox(EL/2-WALL-gW/2 + gOff[0], EH*0.78 + gOff[1], gOff[2], gW, gT, EW-2*WALL, COL_GASKET, 14));
+  COMPONENTS.push({
+    id: 14, name: 'Silicone Perimeter Gasket', section: 'Chassis',
+    info: 'Continuous silicone O-ring gasket sitting in the lid retention groove. Provides IP54-level weather sealing against dust and light rain during outdoor field deployment.',
+    faces: gFaces,
+    labelPos: [EL/2-10, EH*0.78 + 8 + gOff[1], EW/2-10],
+    offset: gOff,
+  });
+
+  // 15: Lid Screws (6×)
+  const scrOff = [0, E*68, 0];
+  const scrPos = [
+    [-EL/2+10, 0, -EW/2+10], [EL/2-10, 0, -EW/2+10],
+    [-EL/2+10, 0, EW/2-10], [EL/2-10, 0, EW/2-10],
+    [BX, 0, -EW/2+10], [BX, 0, EW/2-10],
+  ];
+  const scrFaces = [];
+  scrPos.forEach(p => {
+    scrFaces.push(...makeCylinder(p[0] + scrOff[0], EH*0.82 + 5 + scrOff[1], p[2] + scrOff[2], 2.8, 10, 'y', 8, [155,158,165], 15));
+    scrFaces.push(...makeCylinder(p[0] + scrOff[0], EH*0.82 + 11 + scrOff[1], p[2] + scrOff[2], 3.0, 3, 'y', 8, [140,143,150], 15));
+  });
+  COMPONENTS.push({
+    id: 15, name: 'M3 Hex Socket Screws (×6)', section: 'Chassis',
+    info: 'Stainless steel M3×10 hex socket cap screws. Counterbored into the lid for flush mounting. Engage with threaded brass bosses molded into the enclosure base.',
+    faces: scrFaces,
+    labelPos: [EL/2-10 + scrOff[0], EH + 15 + scrOff[1], EW/2-10],
+    offset: scrOff,
+  });
+
+  // 16: Pneumatic Tubing Lines (if enabled)
+  if (document.getElementById('chk-tubing').checked) {
+    const tubeFaces = [];
+    // Ambient line: inlet → sensor ambient port
+    for (let i = 0; i < 8; i++) {
+      const t = i / 7;
+      const x = -EL/2 + 12 + t * (sensorX + EL/2 - 12);
+      const y = 25 + Math.sin(t * Math.PI) * 5;
+      const z = t < 0.5 ? 0 : -5;
+      tubeFaces.push(...makeCylinder(x, y, z, 2.2, 12, 'x', 6, COL_TUBE, 16));
+    }
+    // Reference line: chamber → sensor ref port
+    for (let i = 0; i < 6; i++) {
+      const t = i / 5;
+      const x = chX + 56 + t * (sensorX - chX - 56);
+      const y = 18 + t * 7;
+      const z = t < 0.5 ? 5 : 5;
+      tubeFaces.push(...makeCylinder(x, y, z, 2.2, 14, 'x', 6, [60,140,220], 16));
+    }
+    COMPONENTS.push({
+      id: 16, name: 'Pneumatic Tubing', section: 'A — Pneumatic',
+      info: 'Flexible clear silicone tubing (2–3 mm ID) connecting the wind inlet to Sensor Ambient Port (+), and the reference chamber to Sensor Reference Port (−). Short runs minimize dead volume and acoustic delay.',
+      faces: tubeFaces,
+      labelPos: [-20, 38, 0],
+      offset: [0,0,0],
+    });
+  }
+
+  // 17: Status LED
+  const ledOff = [E*25, 0, 0];
+  COMPONENTS.push({
+    id: 17, name: 'Status LED', section: 'B — Electronics',
+    info: 'Discrete 0805 green LED indicator visible through a 3.2 mm aperture in the enclosure wall. Indicates power-on, data acquisition active, and Wi-Fi connection status.',
+    faces: makeCylinder(EL/2 - 2 + ledOff[0], 32, -15, 1.6, 2, 'x', 8, COL_GREEN, 17),
+    labelPos: [EL/2 + 5 + ledOff[0], 38, -15],
+    offset: ledOff,
+  });
+
+  // 18: Optional MicroSD
+  const sdOff = [E*18, -E*5, E*10];
+  COMPONENTS.push({
+    id: 18, name: 'MicroSD Card Slot (Optional)', section: 'B — Electronics',
+    info: 'Push-push MicroSD socket module (14.5×14.5×1.8 mm). Provides local backup data logging during Wi-Fi/USB disconnection or field power interruptions.',
+    faces: makeBox(pcbX - 22 + sdOff[0], 20 + sdOff[1], -18 + sdOff[2], 14.5, 1.8, 14.5, [195,195,200], 18),
+    labelPos: [pcbX - 22 + sdOff[0], 28 + sdOff[1], -18 + sdOff[2]],
+    offset: sdOff,
+  });
+}
+
+// ── Build component list in sidebar ──
+function buildCompList() {
+  const el = document.getElementById('comp-list');
+  el.innerHTML = '';
+  const sections = {};
+  COMPONENTS.forEach(c => {
+    if (!sections[c.section]) sections[c.section] = [];
+    sections[c.section].push(c);
+  });
+  for (const [sec, comps] of Object.entries(sections)) {
+    const secColor = sec.includes('Pneumatic') ? 'text-amber-600 dark:text-amber-400' :
+                     sec.includes('Electronics') ? 'text-blue-600 dark:text-blue-400' :
+                     'text-slate-500 dark:text-slate-400';
+    const div = document.createElement('div');
+    div.innerHTML = `<div class="text-[10px] font-bold uppercase tracking-wider ${secColor} mt-2 mb-1">${sec}</div>`;
+    comps.forEach(c => {
+      const btn = document.createElement('button');
+      btn.className = 'comp-item w-full text-left px-2 py-1 text-[11px] rounded-md hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-all border border-transparent';
+      btn.textContent = c.name;
+      btn.dataset.cid = c.id;
+      btn.onclick = () => highlightComponent(c.id);
+      div.appendChild(btn);
+    });
+    el.appendChild(div);
+  }
+}
+
+function highlightComponent(id) {
+  highlighted = (highlighted === id) ? -1 : id;
+  // Update sidebar
+  document.querySelectorAll('.comp-item').forEach(b => {
+    if (parseInt(b.dataset.cid) === highlighted) {
+      b.classList.add('bg-blue-100', 'dark:bg-blue-900/50', 'border-blue-400', 'font-semibold');
+    } else {
+      b.classList.remove('bg-blue-100', 'dark:bg-blue-900/50', 'border-blue-400', 'font-semibold');
+    }
+  });
+  // Show info panel
+  if (highlighted >= 0) {
+    const c = COMPONENTS.find(x => x.id === highlighted);
+    if (c) showInfo(c);
+  } else {
+    hideInfo();
+  }
+  render();
+}
+
+function showInfo(c) {
+  const p = document.getElementById('info-panel');
+  p.style.opacity = '1';
+  p.style.pointerEvents = 'auto';
+  document.getElementById('info-title').textContent = c.name;
+  const secEl = document.getElementById('info-section');
+  const isA = c.section.includes('Pneumatic');
+  const isB = c.section.includes('Electronics');
+  secEl.textContent = c.section;
+  secEl.className = 'text-[11px] px-2 py-0.5 rounded-full w-fit mb-2 font-semibold ' +
+    (isA ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300' :
+     isB ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300' :
+           'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300');
+  document.getElementById('info-body').innerHTML = `<p>${c.info}</p>`;
+}
+
+function hideInfo() {
+  highlighted = -1;
+  document.querySelectorAll('.comp-item').forEach(b => {
+    b.classList.remove('bg-blue-100', 'dark:bg-blue-900/50', 'border-blue-400', 'font-semibold');
+  });
+  const p = document.getElementById('info-panel');
+  p.style.opacity = '0';
+  p.style.pointerEvents = 'none';
+  render();
+}
+
+// ── RENDERING ──
+function render() {
+  isDark = document.documentElement.classList.contains('dark') ||
+           window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+  defineComponents();
+
+  const bgCol = isDark ? '#111318' : '#eef0f3';
+  ctx.fillStyle = bgCol;
+  ctx.fillRect(0, 0, W, H);
+
+  // Grid
+  if (showGrid) drawGrid();
+
+  // Gather all faces
+  let allFaces = [];
+  COMPONENTS.forEach(comp => {
+    comp.faces.forEach(f => {
+      allFaces.push(f);
+    });
+  });
+
+  // Project face centers for depth sort
+  const projected = allFaces.map(f => {
+    const center = f.pts.reduce((a,b) => V3.add(a,b), [0,0,0]);
+    center[0] /= f.pts.length;
+    center[1] /= f.pts.length;
+    center[2] /= f.pts.length;
+    const pc = project(center);
+    const pPts = f.pts.map(p => project(p));
+    if (!pc || pPts.some(p => !p)) return null;
+    return { ...f, pc, pPts, depth: pc.z };
+  }).filter(Boolean);
+
+  // Painter's sort (back to front)
+  projected.sort((a, b) => b.depth - a.depth);
+
+  // Light direction
+  const lightDir = V3.norm([0.4, 0.7, -0.5]);
+
+  projected.forEach(f => {
+    // Backface culling
+    const e1 = V3.sub(f.pts[1], f.pts[0]);
+    const e2 = V3.sub(f.pts[2], f.pts[0]);
+    let viewN = V3.cross(e1, e2);
+    const camPos = [
+      camTarget[0] + camDist * Math.sin(camTheta) * Math.cos(camPhi),
+      camTarget[1] + camDist * Math.sin(camPhi),
+      camTarget[2] + camDist * Math.cos(camTheta) * Math.cos(camPhi),
+    ];
+    const toCamera = V3.sub(camPos, f.pts[0]);
+    if (V3.dot(viewN, toCamera) < 0 && !xrayMode) return;
+
+    // Lighting
+    const n = V3.norm(f.n);
+    let brightness = Math.max(0.18, V3.dot(n, lightDir) * 0.55 + 0.5);
+
+    let [r, g, b] = f.color;
+    let alpha = 1.0;
+
+    // Highlight glow
+    if (highlighted === f.cid) {
+      r = Math.min(255, r + 45);
+      g = Math.min(255, g + 45);
+      b = Math.min(255, b + 80);
+      brightness = Math.min(1, brightness + 0.15);
+    } else if (highlighted >= 0) {
+      // Dim non-highlighted
+      brightness *= 0.45;
+      alpha = 0.5;
+    }
+
+    if (xrayMode) {
+      alpha = (highlighted === f.cid) ? 0.75 : 0.22;
+      brightness = Math.min(1, brightness + 0.1);
+    }
+
+    r = Math.round(r * brightness);
+    g = Math.round(g * brightness);
+    b = Math.round(b * brightness);
+
+    ctx.beginPath();
+    ctx.moveTo(f.pPts[0].x, f.pPts[0].y);
+    for (let i = 1; i < f.pPts.length; i++) {
+      ctx.lineTo(f.pPts[i].x, f.pPts[i].y);
+    }
+    ctx.closePath();
+    ctx.fillStyle = `rgba(${r},${g},${b},${alpha})`;
+    ctx.fill();
+
+    // Edge lines
+    if (!xrayMode || highlighted === f.cid) {
+      ctx.strokeStyle = `rgba(${Math.max(0,r-30)},${Math.max(0,g-30)},${Math.max(0,b-30)},${alpha*0.4})`;
+      ctx.lineWidth = 0.5;
+      ctx.stroke();
+    }
+    if (xrayMode) {
+      ctx.strokeStyle = `rgba(${r},${g},${b},${alpha*0.6})`;
+      ctx.lineWidth = 0.3;
+      ctx.stroke();
+    }
+  });
+
+  // Labels
+  if (showLabels) drawLabels();
+
+  // Dimensions
+  if (showDims) drawDimensions();
+
+  // Axes widget
+  drawAxes();
+
+  // Watermark
+  ctx.fillStyle = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
+  ctx.font = '10px sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillText('CONCEPTUAL VISUALIZATION — NOT MANUFACTURING-READY CAD', W - 12, H - 8);
+}
+
+function drawGrid() {
+  const gridY = 0;
+  const step = 20, count = 12;
+  ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+  ctx.lineWidth = 0.5;
+  for (let i = -count; i <= count; i++) {
+    const p1 = project([i*step, gridY, -count*step]);
+    const p2 = project([i*step, gridY, count*step]);
+    if (p1 && p2) { ctx.beginPath(); ctx.moveTo(p1.x,p1.y); ctx.lineTo(p2.x,p2.y); ctx.stroke(); }
+    const p3 = project([-count*step, gridY, i*step]);
+    const p4 = project([count*step, gridY, i*step]);
+    if (p3 && p4) { ctx.beginPath(); ctx.moveTo(p3.x,p3.y); ctx.lineTo(p4.x,p4.y); ctx.stroke(); }
+  }
+}
+
+function drawLabels() {
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+
+  COMPONENTS.forEach(comp => {
+    if (comp.id === 16) return; // skip tubing label (too cluttered)
+    const p = project(comp.labelPos);
+    if (!p || p.z < 10) return;
+
+    const isHl = highlighted === comp.id;
+    const alpha = highlighted >= 0 && !isHl ? 0.2 : 0.85;
+
+    // Leader line from a face center to label
+    const faceMid = comp.faces.length > 0 ?
+      comp.faces[0].pts.reduce((a,b) => V3.add(a,b), [0,0,0]).map(v => v / comp.faces[0].pts.length) :
+      comp.labelPos;
+    const pm = project(faceMid);
+
+    if (pm) {
+      ctx.strokeStyle = isDark ? `rgba(180,200,255,${alpha*0.35})` : `rgba(40,60,120,${alpha*0.3})`;
+      ctx.lineWidth = 0.7;
+      ctx.setLineDash([3, 3]);
+      ctx.beginPath();
+      ctx.moveTo(pm.x, pm.y);
+      ctx.lineTo(p.x, p.y);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    // Label background
+    const text = comp.name;
+    ctx.font = isHl ? 'bold 11px system-ui, sans-serif' : '10px system-ui, sans-serif';
+    const tw = ctx.measureText(text).width;
+
+    ctx.fillStyle = isDark ? `rgba(20,24,32,${alpha*0.85})` : `rgba(255,255,255,${alpha*0.88})`;
+    const pad = 4;
+    ctx.beginPath();
+    ctx.roundRect(p.x - 2, p.y - 9, tw + pad*2, 18, 4);
+    ctx.fill();
+
+    ctx.strokeStyle = isDark ? `rgba(100,130,200,${alpha*0.5})` : `rgba(60,80,140,${alpha*0.35})`;
+    ctx.lineWidth = 0.6;
+    ctx.stroke();
+
+    // Section color dot
+    const isA = comp.section.includes('Pneumatic');
+    const isB = comp.section.includes('Electronics');
+    const dotColor = isA ? `rgba(220,160,40,${alpha})` : isB ? `rgba(60,130,240,${alpha})` : `rgba(140,140,150,${alpha})`;
+    ctx.fillStyle = dotColor;
+    ctx.beginPath();
+    ctx.arc(p.x + 2, p.y, 2.5, 0, Math.PI*2);
+    ctx.fill();
+
+    // Text
+    ctx.fillStyle = isDark ? `rgba(220,225,240,${alpha})` : `rgba(20,30,60,${alpha})`;
+    ctx.fillText(text, p.x + 8, p.y);
+  });
+}
+
+function drawDimensions() {
+  const EL=165, EW=100, EH=56;
+  const dimColor = isDark ? 'rgba(100,200,255,0.6)' : 'rgba(0,80,180,0.6)';
+
+  function dimLine(p1, p2, label, offset) {
+    const pp1 = project(p1);
+    const pp2 = project(p2);
+    if (!pp1 || !pp2) return;
+    ctx.strokeStyle = dimColor;
+    ctx.lineWidth = 1;
+    ctx.setLineDash([]);
+    ctx.beginPath();
+    ctx.moveTo(pp1.x, pp1.y);
+    ctx.lineTo(pp2.x, pp2.y);
+    ctx.stroke();
+    // arrowheads
+    const dx = pp2.x-pp1.x, dy = pp2.y-pp1.y;
+    const len = Math.sqrt(dx*dx+dy*dy);
+    if (len < 20) return;
+    const ux = dx/len, uy = dy/len;
+    [pp1, pp2].forEach((p, i) => {
+      const sign = i === 0 ? 1 : -1;
+      ctx.beginPath();
+      ctx.moveTo(p.x, p.y);
+      ctx.lineTo(p.x + sign*(ux*6 - uy*3), p.y + sign*(uy*6 + ux*3));
+      ctx.lineTo(p.x + sign*(ux*6 + uy*3), p.y + sign*(uy*6 - ux*3));
+      ctx.closePath();
+      ctx.fillStyle = dimColor;
+      ctx.fill();
+    });
+    // label
+    const mx = (pp1.x+pp2.x)/2, my = (pp1.y+pp2.y)/2;
+    ctx.font = 'bold 10px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = isDark ? 'rgba(130,210,255,0.8)' : 'rgba(0,60,160,0.75)';
+    ctx.fillText(label, mx + (offset||0), my - 8);
+  }
+
+  dimLine([-EL/2, -2, -EW/2-15], [EL/2, -2, -EW/2-15], '165 mm (prelim.)', 0);
+  dimLine([-EL/2-12, -2, -EW/2], [-EL/2-12, -2, EW/2], '100 mm (prelim.)', 0);
+  dimLine([EL/2+12, 0, EW/2-5], [EL/2+12, EH*0.8, EW/2-5], '56 mm (prelim.)', 0);
+}
+
+function drawAxes() {
+  const aw = 90;
+  AX.clearRect(0, 0, aw, aw);
+  const axLen = 28;
+  const axes = [
+    { dir: [1,0,0], label: 'X', color: '#ef4444' },
+    { dir: [0,1,0], label: 'Y', color: '#22c55e' },
+    { dir: [0,0,1], label: 'Z', color: '#3b82f6' },
+  ];
+  axes.forEach(a => {
+    let d = rotY(a.dir, -camTheta);
+    d = rotX(d, -camPhi);
+    const x2 = aw/2 + d[0]*axLen;
+    const y2 = aw/2 - d[1]*axLen;
+    AX.strokeStyle = a.color;
+    AX.lineWidth = 2;
+    AX.beginPath();
+    AX.moveTo(aw/2, aw/2);
+    AX.lineTo(x2, y2);
+    AX.stroke();
+    AX.fillStyle = a.color;
+    AX.font = 'bold 10px monospace';
+    AX.textAlign = 'center';
+    AX.fillText(a.label, x2 + (d[0]>0?6:-6), y2 + (d[1]<0?-4:10));
+  });
+}
+
+// ── INTERACTION ──
+let dragging = false, panning = false, lastX, lastY;
+
+C.addEventListener('mousedown', e => {
+  if (e.button === 2 || e.ctrlKey) { panning = true; }
+  else { dragging = true; }
+  lastX = e.clientX; lastY = e.clientY;
+  e.preventDefault();
+});
+C.addEventListener('contextmenu', e => e.preventDefault());
+
+window.addEventListener('mousemove', e => {
+  if (dragging) {
+    camTheta += (e.clientX - lastX) * 0.006;
+    camPhi   += (e.clientY - lastY) * 0.006;
+    camPhi = Math.max(-Math.PI/2+0.05, Math.min(Math.PI/2-0.05, camPhi));
+    lastX = e.clientX; lastY = e.clientY;
+    render();
+  } else if (panning) {
+    panX += (e.clientX - lastX);
+    panY += (e.clientY - lastY);
+    lastX = e.clientX; lastY = e.clientY;
+    render();
+  }
+});
+
+window.addEventListener('mouseup', () => { dragging = false; panning = false; });
+
+C.addEventListener('wheel', e => {
+  camDist *= (1 + e.deltaY * 0.001);
+  camDist = Math.max(100, Math.min(1200, camDist));
+  e.preventDefault();
+  render();
+}, { passive: false });
+
+// Touch support
+let lastTouch = null, lastTouchDist = null;
+C.addEventListener('touchstart', e => {
+  if (e.touches.length === 1) {
+    lastTouch = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  } else if (e.touches.length === 2) {
+    const dx = e.touches[0].clientX - e.touches[1].clientX;
+    const dy = e.touches[0].clientY - e.touches[1].clientY;
+    lastTouchDist = Math.sqrt(dx*dx + dy*dy);
+  }
+  e.preventDefault();
+}, { passive: false });
+
+C.addEventListener('touchmove', e => {
+  if (e.touches.length === 1 && lastTouch) {
+    camTheta += (e.touches[0].clientX - lastTouch.x) * 0.006;
+    camPhi   += (e.touches[0].clientY - lastTouch.y) * 0.006;
+    camPhi = Math.max(-Math.PI/2+0.05, Math.min(Math.PI/2-0.05, camPhi));
+    lastTouch = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    render();
+  } else if (e.touches.length === 2) {
+    const dx = e.touches[0].clientX - e.touches[1].clientX;
+    const dy = e.touches[0].clientY - e.touches[1].clientY;
+    const dist = Math.sqrt(dx*dx + dy*dy);
+    if (lastTouchDist) {
+      camDist *= lastTouchDist / dist;
+      camDist = Math.max(100, Math.min(1200, camDist));
+    }
+    lastTouchDist = dist;
+    render();
+  }
+  e.preventDefault();
+}, { passive: false });
+
+C.addEventListener('touchend', () => { lastTouch = null; lastTouchDist = null; });
+
+// ── CONTROLS ──
+function setCam(preset) {
+  document.querySelectorAll('.cam-btn').forEach(b => {
+    b.classList.remove('border-blue-500','bg-blue-50/50','dark:bg-blue-950/30','text-blue-700','dark:text-blue-300','glow');
+    b.classList.add('border-[var(--border)]');
+  });
+  // find matching button
+  const btns = document.querySelectorAll('.cam-btn');
+  const names = { front:0, top:1, iso:2, right:3, exploded:4, cutaway:5 };
+  const idx = names[preset];
+  if (idx !== undefined && btns[idx]) {
+    btns[idx].classList.add('border-blue-500','bg-blue-50/50','dark:bg-blue-950/30','text-blue-700','dark:text-blue-300','glow');
+    btns[idx].classList.remove('border-[var(--border)]');
+  }
+
+  panX = 0; panY = 0;
+  switch(preset) {
+    case 'front':
+      animateCam(0, 0.15, 380);
+      break;
+    case 'top':
+      animateCam(0, Math.PI/2 - 0.08, 350);
+      break;
+    case 'iso':
+      animateCam(0.65, 0.45, 420);
+      break;
+    case 'right':
+      animateCam(Math.PI/2, 0.2, 380);
+      break;
+    case 'exploded':
+      animateCam(0.55, 0.5, 550);
+      document.getElementById('chk-explode').checked = true;
+      animateExplode(1.0);
+      return;
+    case 'cutaway':
+      animateCam(0.45, 0.35, 420);
+      xrayMode = true;
+      document.getElementById('chk-xray').checked = true;
+      render();
+      return;
+  }
+  // reset modes on non-special presets
+  if (preset !== 'exploded') {
+    document.getElementById('chk-explode').checked = false;
+    animateExplode(0);
+  }
+  if (preset !== 'cutaway') {
+    xrayMode = false;
+    document.getElementById('chk-xray').checked = false;
+  }
+}
+
+let animFrame = null;
+function animateCam(targetTheta, targetPhi, targetDist) {
+  if (animFrame) cancelAnimationFrame(animFrame);
+  const startTheta = camTheta, startPhi = camPhi, startDist = camDist;
+  const dur = 400;
+  const t0 = performance.now();
+  function step(now) {
+    let t = Math.min(1, (now - t0) / dur);
+    t = t * t * (3 - 2*t); // smoothstep
+    camTheta = startTheta + (targetTheta - startTheta) * t;
+    camPhi = startPhi + (targetPhi - startPhi) * t;
+    camDist = startDist + (targetDist - startDist) * t;
+    render();
+    if (t < 1) animFrame = requestAnimationFrame(step);
+  }
+  animFrame = requestAnimationFrame(step);
+}
+
+let explodeAnim = null;
+function animateExplode(target) {
+  if (explodeAnim) cancelAnimationFrame(explodeAnim);
+  const start = explodeT;
+  const dur = 500;
+  const t0 = performance.now();
+  function step(now) {
+    let t = Math.min(1, (now - t0) / dur);
+    t = t * t * (3 - 2*t);
+    explodeT = start + (target - start) * t;
+    document.getElementById('explode-slider').value = Math.round(explodeT * 100);
+    document.getElementById('explode-val').textContent = Math.round(explodeT * 100) + '%';
+    render();
+    if (t < 1) explodeAnim = requestAnimationFrame(step);
+  }
+  explodeAnim = requestAnimationFrame(step);
+}
+
+function setExplode(v) {
+  explodeT = v / 100;
+  document.getElementById('explode-val').textContent = v + '%';
+  document.getElementById('chk-explode').checked = explodeT > 0.01;
+  render();
+}
+
+function toggleExplode() {
+  const checked = document.getElementById('chk-explode').checked;
+  animateExplode(checked ? 1.0 : 0.0);
+}
+
+function toggleXray() {
+  xrayMode = document.getElementById('chk-xray').checked;
+  render();
+}
+
+function toggleLabels() {
+  showLabels = document.getElementById('chk-labels').checked;
+  render();
+}
+
+function toggleGrid() {
+  showGrid = document.getElementById('chk-grid').checked;
+  render();
+}
+
+function toggleDims() {
+  showDims = document.getElementById('chk-dims').checked;
+  render();
+}
+
+// ── roundRect polyfill for older browsers ──
+if (!CanvasRenderingContext2D.prototype.roundRect) {
+  CanvasRenderingContext2D.prototype.roundRect = function(x,y,w,h,r) {
+    if (typeof r === 'number') r = [r,r,r,r];
+    this.moveTo(x+r[0],y);
+    this.lineTo(x+w-r[1],y);
+    this.quadraticCurveTo(x+w,y,x+w,y+r[1]);
+    this.lineTo(x+w,y+h-r[2]);
+    this.quadraticCurveTo(x+w,y+h,x+w-r[2],y+h);
+    this.lineTo(x+r[3],y+h);
+    this.quadraticCurveTo(x,y+h,x,y+h-r[3]);
+    this.lineTo(x,y+r[0]);
+    this.quadraticCurveTo(x,y,x+r[0],y);
+  };
+}
+
+// ── INIT ──
+resize();
+buildCompList();
+render();
+
+// Re-render on theme change
+new MutationObserver(() => render()).observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+</script>
+
+</body>
+</html>
+
+<!--
+Old File
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
 <title>Microbarometer Prototype — 3D Reference Model</title>
 <style>
   :root{
@@ -348,4 +1428,4 @@ function animate(){
 animate();
 </script>
 </body>
-</html>
+</html> -->
