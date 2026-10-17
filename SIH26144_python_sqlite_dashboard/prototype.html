@@ -6,6 +6,23 @@
 <title>Microbarometer 3D Prototype — SIH26144 / PS144</title>
 <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
 <style>
+  :root {
+    color-scheme: light dark;
+    --background: #f8f9fb;
+    --foreground: #0f172a;
+    --card: #ffffff;
+    --border: #d9dde4;
+    --muted-foreground: #64748b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --background: #0d1017;
+      --foreground: #e6e9f0;
+      --card: #151a23;
+      --border: #2a3140;
+      --muted-foreground: #8b95a7;
+    }
+  }
   canvas { display:block; }
   .glow { box-shadow: 0 0 12px rgba(59,130,246,0.35); }
   ::-webkit-scrollbar { width:6px; }
@@ -114,7 +131,17 @@ let showLabels = true;
 let showGrid = true;
 let showDims = false;
 let highlighted = -1;
-let isDark = false;
+
+// ── Theme (follows OS light/dark automatically) ──
+const darkQuery = window.matchMedia('(prefers-color-scheme: dark)');
+let isDark = darkQuery.matches;
+
+function applyTheme() {
+  isDark = darkQuery.matches;
+  document.documentElement.classList.toggle('dark', isDark); // makes the dark: Tailwind classes work too
+}
+applyTheme();
+darkQuery.addEventListener('change', () => { applyTheme(); render(); });
 
 function resize() {
   const r = C.parentElement.getBoundingClientRect();
@@ -596,9 +623,6 @@ function hideInfo() {
 
 // ── RENDERING ──
 function render() {
-  isDark = document.documentElement.classList.contains('dark') ||
-           window.matchMedia('(prefers-color-scheme: dark)').matches;
-
   defineComponents();
 
   const bgCol = isDark ? '#111318' : '#eef0f3';
@@ -1068,9 +1092,6 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
 resize();
 buildCompList();
 render();
-
-// Re-render on theme change
-new MutationObserver(() => render()).observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
 </script>
 
 </body>
