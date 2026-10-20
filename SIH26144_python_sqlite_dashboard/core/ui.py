@@ -50,13 +50,15 @@ CSS = r"""
 
 .brand-section {
   display: flex;
-  align-items: center;
+  align-items: center; /* Vertically aligns logo and text on the same line */
   gap: 12px;
+  flex-shrink: 0;
 }
 
 .brand-logo {
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
+  min-width: 36px; /* Prevents the logo from shrinking or distorting */
   background: linear-gradient(135deg, #00d2ff, #0284c7);
   border-radius: 6px;
   display: flex;
@@ -66,6 +68,12 @@ CSS = r"""
   font-size: 16px;
   color: #03101c;
   box-shadow: 0 0 15px rgba(0, 210, 255, 0.35);
+}
+
+.brand-text-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .brand-title {
@@ -272,14 +280,14 @@ def inject_css():
         .stDeployButton {display: none !important;}
     </style>
     """, unsafe_allow_html=True)
-    
+
 def header(source_label=None):
     chip_text = f"SYSTEM ONLINE • {source_label} • 100 Hz" if source_label else "SYSTEM ONLINE • 100 Hz"
     st.markdown(f"""
     <div class="top-header">
       <div class="brand-section">
         <div class="brand-logo">⬡</div>
-        <div>
+        <div class="brand-text-container">
           <h2 class="brand-title">MICROBAROMETER</h2>
           <p class="brand-sub">HIGH-SENSITIVITY MICROBAROMETER</p>
         </div>
@@ -296,6 +304,29 @@ def header(source_label=None):
       </div>
     </div>
     """, unsafe_allow_html=True)
+# def header(source_label=None):
+#     chip_text = f"SYSTEM ONLINE • {source_label} • 100 Hz" if source_label else "SYSTEM ONLINE • 100 Hz"
+#     st.markdown(f"""
+#     <div class="top-header">
+#       <div class="brand-section">
+#         <div class="brand-logo">⬡</div>
+#         <div>
+#           <h2 class="brand-title">MICROBAROMETER</h2>
+#           <p class="brand-sub">HIGH-SENSITIVITY MICROBAROMETER</p>
+#         </div>
+#       </div>
+#       <div class="header-meta">
+#         <div class="header-title-box">
+#           <p class="header-main-title">Real-Time Infrasound Monitoring &amp; Signal Analysis</p>
+#           <p class="header-main-sub">Atmospheric pressure wave detection &amp; spectral characterization (0.01 – 20 Hz)</p>
+#         </div>
+#         <div class="status-chip">
+#           <span class="pulse-dot"></span>
+#           <span>{chip_text}</span>
+#         </div>
+#       </div>
+#     </div>
+#     """, unsafe_allow_html=True)
 
 
 def alert_board(metrics, det):
