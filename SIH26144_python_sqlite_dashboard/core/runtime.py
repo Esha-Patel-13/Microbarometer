@@ -40,8 +40,11 @@ def update_runtime():
     rows=st.session_state.buffer
     if not rows:
         return None
-    x_raw=np.array([r["filtered_pressure_pa"] for r in rows],dtype=float)
-    x=preprocess(x_raw)
+    x_raw = np.array([r["filtered_pressure_pa"] for r in rows], dtype=float)
+# Keep the raw mean (so the signal stays positive)
+    x = preprocess(x_raw) + np.mean(x_raw)   
+# If you also want the absolute value:
+    x = np.abs(x)
     now=time.monotonic()
     if st.session_state.analysis is None or now-st.session_state.last_dsp>=DSP_REFRESH_SECONDS or source.finished:
         f_fft,m_fft=fft(x); f_psd,p_psd=welch_psd(x); sf,stime,sp=spectrogram(x); met=metrics(x,f_psd,p_psd)
