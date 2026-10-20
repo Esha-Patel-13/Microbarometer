@@ -30,7 +30,7 @@ def live():
     c1, c2 = st.columns(2)
     with c1:
         st.markdown('<div class="chart-card">', unsafe_allow_html=True)
-        st.pyplot(line_fig(t, x, "Pressure waveform", "Time (s)", "ΔP (Pa)", xlim=(max(0, t[-1] - LIVE_WINDOW_SECONDS), max(LIVE_WINDOW_SECONDS, t[-1]))), clear_figure=True, use_container_width=True)
+        st.pyplot(line_fig(t, np.abs(x), "Pressure waveform", "Time (s)", "ΔP (Pa)", xlim=(max(0, t[-1] - LIVE_WINDOW_SECONDS), max(LIVE_WINDOW_SECONDS, t[-1]))), clear_figure=True, use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
     with c2:
         st.markdown('<div class="chart-card">', unsafe_allow_html=True)
