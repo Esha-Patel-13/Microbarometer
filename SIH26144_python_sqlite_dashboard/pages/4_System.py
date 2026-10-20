@@ -15,7 +15,7 @@ PRESSURE INLET + WIND-NOISE REDUCTION
 ↓
 REFERENCE CHAMBER
 ↓
-MS5611 / DPS310
+Amphenol Differential Sensor (Port A) ← Capillary ← Port B (Chamber)
 ↓
 INA333 + FILTER
 ↓

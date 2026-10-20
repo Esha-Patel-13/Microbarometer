@@ -101,6 +101,10 @@ with tab2:
         
         calc_step = p_atm * (dv_ml / v0_ml)
         st.info(f"Theoretical Step Input $\\Delta P_0$: **{calc_step:.2f} Pa**")
+        # Warning if step exceeds ~80 % of full‑scale (±124.5 Pa)
+        full_scale = 124.5
+        if calc_step > 0.8 * full_scale:
+            st.warning(f"Step pressure {calc_step:.2f} Pa exceeds 80 % of full‑scale ({0.8*full_scale:.1f} Pa). Consider reducing ΔV.")
         
         if st.button("Simulate Step Release & Fit Decay", type="primary", use_container_width=True):
             t = np.linspace(0, 80, 800)

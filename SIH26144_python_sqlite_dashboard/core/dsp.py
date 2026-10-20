@@ -13,7 +13,7 @@ def preprocess(x: np.ndarray):
     x = signal.detrend(x, type="linear")
     high = min(19.5, TARGET_HIGH_HZ)
     if x.size >= 300:
-        sos = signal.butter(4, [0.05, high], btype="bandpass", fs=FS, output="sos")
+        sos = signal.butter(4, [0.01, high], btype="bandpass", fs=FS, output="sos")
         x = signal.sosfiltfilt(sos, x)
     return x
 

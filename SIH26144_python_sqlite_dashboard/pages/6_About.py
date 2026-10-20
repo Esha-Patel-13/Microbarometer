@@ -2,7 +2,7 @@ import streamlit as st
 from core.ui import inject_css, header
 
 inject_css(); header()
-st.markdown("## About SIH26144")
+st.markdown("## About Microbarometer")
 st.write("High-Sensitivity Microbarometer for low-frequency atmospheric pressure and infrasound monitoring.")
 
 #st.markdown("## Dashboard Workflow")
