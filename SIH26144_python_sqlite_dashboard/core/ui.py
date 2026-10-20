@@ -280,7 +280,7 @@ def header(source_label=None):
       <div class="brand-section">
         <div class="brand-logo">⬡</div>
         <div>
-          <h1 class="brand-title">MICROBAROMETER</h1>
+          <h2 class="brand-title">MICROBAROMETER</h2>
           <p class="brand-sub">HIGH-SENSITIVITY MICROBAROMETER</p>
         </div>
       </div>
