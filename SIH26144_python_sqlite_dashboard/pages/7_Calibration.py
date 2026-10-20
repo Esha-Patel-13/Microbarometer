@@ -74,7 +74,9 @@ with tab1:
             m1, m2, m3 = st.columns(3)
             m1.metric("Measured Sensitivity", f"{res['slope']:.2f} mV/Pa", delta=f"{res['slope']-NOMINAL_SENSITIVITY_MV_PA:+.2f} mV/Pa")
             m2.metric("Linearity (R²)", f"{res['r_squared']:.4f}", delta="PASS (>=0.99)" if res["r_squared"] >= 0.99 else "WARN")
-            m3.metric("Passband Flatness", "± 0.35 dB", delta="PASS")
+            # Compute passband flatness from the gain (dB) response
+            flatness_db = float(np.ptp(res["gain_db"])) if "gain_db" in res else 0.0
+            m3.metric("Passband Flatness", f"± {flatness_db:.2f} dB", delta="PASS" if flatness_db <= 0.5 else "WARN")
             
             st.pyplot(calibration_curve_fig(p_ref, v_dut, res["p_fit"], res["v_fit"], res["slope"], res["intercept"], res["r_squared"]), clear_figure=True, use_container_width=True)
             st.pyplot(frequency_response_bode_fig(freqs, res["gain_db"], NOMINAL_SENSITIVITY_MV_PA), clear_figure=True, use_container_width=True)
@@ -94,7 +96,7 @@ with tab2:
     with col_s1:
         st.markdown("#### Physical Parameters")
         v0_ml = st.number_input("Chamber Volume V₀ (mL)", min_value=10.0, max_value=1000.0, value=DEFAULT_CHAMBER_VOL_ML, step=10.0)
-        dv_ml = st.number_input("Syringe Step ΔV (mL)", min_value=0.01, max_value=20.0, value=0.50, step=0.05)
+        dv_ml = st.number_input("Syringe Step ΔV (mL)", min_value=0.01, max_value=20.0, value=0.05, step=0.01)
         p_atm = st.number_input("Ambient Atmospheric Pressure (Pa)", min_value=80000.0, max_value=110000.0, value=ATM_PRESSURE_PA, step=100.0)
         
         calc_step = p_atm * (dv_ml / v0_ml)

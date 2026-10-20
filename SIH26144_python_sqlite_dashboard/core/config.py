@@ -17,8 +17,9 @@ EVENT_THRESHOLD_DB = 10.0          # demonstration threshold; must be validated 
 
 # Calibration Standards & Physical Constants
 NOMINAL_SENSITIVITY_MV_PA = 20.0   # 20 mV/Pa target from Problem PDF
-DEFAULT_CHAMBER_VOL_ML = 100.0      # Reference chamber volume (mL)
+# Updated chamber volume to design value
+DEFAULT_CHAMBER_VOL_ML = 200.0      # Design chamber volume (mL)
 ATM_PRESSURE_PA = 101325.0         # Standard atmospheric pressure (Pa)
 TARGET_LOW_CUTOFF_HZ = 0.01        # Low-frequency cutoff target
-ADC_VREF_V = 12.0                  # Standard differential voltage range (V)
-
+# Remove unused ADC reference constant; use correct reference elsewhere
+# ADC_VREF_V = 12.0                  # Deprecated
