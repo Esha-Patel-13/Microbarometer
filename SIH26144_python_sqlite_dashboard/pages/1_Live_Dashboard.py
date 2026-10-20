@@ -19,12 +19,12 @@ def live():
     rows, x_raw, a = result
     metrics = a["metrics"]
     det = a["det"]
-    x = np.abs(a["x"])
+    x = a["x"]
     t = np.arange(len(x)) / FS
     
     # 1. Alert Board & 8 Metric Cards (Original Content)
     alert_board(metrics, det)
-    metric_cards(rows, x_raw, metrics, det)
+    metric_cards(rows, np.abs(x_raw), metrics, det)
     
     # 2. 4 Core Infrasound Graphs (2x2 Grid)
     c1, c2 = st.columns(2)
