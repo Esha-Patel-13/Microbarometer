@@ -17,8 +17,7 @@ monitoring = st.Page("pages/1_Live_Dashboard.py", title="Live Dashboard", icon="
 events = st.Page("pages/3_Events.py", title="Events", icon=":material/warning:")
 system = st.Page("pages/4_System.py", title="System", icon=":material/settings:")
 prototype = st.Page("pages/5_Prototype.py", title="Prototype", icon=":material/view_in_ar:")
-calibration = st.Page("pages/7_Calibration.py", title="Calibration", icon=":material/tune:")
 about = st.Page("pages/6_About.py", title="About", icon=":material/info:")
 
-pg = st.navigation([monitoring, events, system, prototype, calibration, about])
+pg = st.navigation([monitoring, events, system, prototype, about])
 pg.run()
